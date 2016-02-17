@@ -39,6 +39,15 @@ class State {
     }
 
     void applyTurn(Turn t) {
+        for(int[] coors : t.earSeq){
+            field[coors[0]][coors[1]]= '#';
+        }
+        field[t.coorsFrom[0]][t.coorsFrom[1]]= '#';
+        if(whiteTurn)
+            field[t.coorsTo[0]][t.coorsTo[1]]= 'W';
+        else
+            field[t.coorsTo[0]][t.coorsTo[1]]= 'B';
+
 
     }
 }
@@ -46,11 +55,13 @@ class State {
 class Turn {
     boolean whiteTurn;
     int[] coorsFrom, coorsTo;
+    ArrayDeque<int[]> earSeq;
 
-    Turn(boolean whiteTurn, int[] coorsFrom, int[] coorsTo) {
+    Turn(boolean whiteTurn, int[] coorsFrom, int[] coorsTo, ArrayDeque<int[]> eaten) {
         this.coorsFrom = coorsFrom;
         this.coorsTo = coorsTo;
         this.whiteTurn = whiteTurn;
+        this.earSeq = eaten;
     }
 }
 
@@ -118,6 +129,7 @@ public class Main {
         }
         State s = new State();
         char[][] layer = new char[8][8];
+        int[][][] coorsPrev = new int[8][8][2];
 
 
         while (!s.gameFinihed) {
@@ -136,33 +148,42 @@ public class Main {
 
                 } while (coorsFrom==null || s.contentAt(coorsFrom) != 'W');
                 layer[coorsFrom[0]][coorsFrom[1]] = '@';
+                int[] cur = coorsFrom.clone();
 
                 for (int i = 0; i < 2; i++) {
-                    coorsFrom[0]+=dirs[i][0];
-                    coorsFrom[1]+=dirs[i][1];
-                    if(s.contentAt(coorsFrom)=='#'){
-                        layer[coorsFrom[0]][coorsFrom[1]] = 'O';
-                        layer[coorsFrom[0]][coorsFrom[1]] = 'O';
+
+                    cur[0]+=dirs[i][0];
+                    cur[1]+=dirs[i][1];
+                    if(s.contentAt(cur)=='#'){
+                        layer[cur[0]][cur[1]] = 'O';
+                        layer[cur[0]][cur[1]] = 'O';
+                        coorsPrev[cur[0]][cur[1]] = coorsFrom.clone();
+
 
                     }
-                    coorsFrom[0]-=dirs[i][0];
-                    coorsFrom[1]-=dirs[i][1];
+                    cur[0]-=dirs[i][0];
+                    cur[1]-=dirs[i][1];
                 }
                 ArrayDeque<int[]> eat = new ArrayDeque<>();
                 eat.add(coorsFrom);
                 while (!eat.isEmpty()){
-                    int[] cur = eat.pop();
+                    cur = eat.pop();
                     for (int i = 0; i < 4; i++) {
                         cur[0]+=dirs[i][0];
                         cur[1]+=dirs[i][1];
-                        if(s.contentAt(coorsFrom)=='B'){
+                        if(s.contentAt(cur)=='B'){
                             cur[0]+=dirs[i][0];
                             cur[1]+=dirs[i][1];
-                            if(s.contentAt(coorsFrom)=='#'){
-                                layer[coorsFrom[0]][coorsFrom[1]] = 'O';
+                            if(s.contentAt(cur)=='#'){
+                                layer[cur[0]][cur[1]] = 'O';
+                                coorsPrev[cur[0]][cur[1]] = coorsFrom.clone();
                                 eat.add(coorsFrom.clone());
                             }
+                            cur[0]-=dirs[i][0];
+                            cur[1]-=dirs[i][1];
                         }
+                        cur[0]-=dirs[i][0];
+                        cur[1]-=dirs[i][1];
                     }
 
                 }
@@ -180,9 +201,24 @@ public class Main {
                     coorsTo=parseCoors(nxt);
                 } while (coorsTo==null  || layer[coorsTo[0]][coorsTo[1]] != 'O');
             }
-            Turn t = new Turn(true, coorsFrom, coorsTo);
-            s.applyTurn(t);
+            ArrayDeque<int[]> eaten = new ArrayDeque<>();
+            int[] curc = coorsTo.clone(), newcurc = new int[2];
 
+            newcurc[0] = coorsPrev[curc[0]][curc[1]][0];
+            newcurc[1] = coorsPrev[curc[0]][curc[1]][1];
+            curc = newcurc;
+
+            while(curc[0]!=coorsFrom[0] || curc[1]!=coorsFrom[1]){
+                curc[0] = coorsPrev[curc[0]][curc[1]][0];
+                curc[1] = coorsPrev[curc[0]][curc[1]][1];
+                eaten.add(new int[]{
+                        (coorsPrev[curc[0]][curc[1]][0] + curc[0])/2,
+                        (coorsPrev[curc[0]][curc[1]][1] + curc[1])/2
+                });
+            }
+            Turn t = new Turn(true, coorsFrom, coorsTo, eaten);
+            s.applyTurn(t);
+            //Invoke Grisha
 
 
         }
