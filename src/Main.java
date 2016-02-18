@@ -41,7 +41,12 @@ class State {
     void applyTurn(Turn t) {
         for(int[] coors : t.earSeq){
             field[coors[0]][coors[1]]= '#';
+            if(whiteTurn)
+                blackLeft--;
+            else
+                whiteLeft--;
         }
+
         field[t.coorsFrom[0]][t.coorsFrom[1]]= '#';
         if(whiteTurn)
             field[t.coorsTo[0]][t.coorsTo[1]]= 'W';
